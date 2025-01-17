@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Clock, RotateCcw, Globe } from 'lucide-react';
 import { locations } from './data/locations';
 import { translations } from './data/translations';
@@ -15,11 +15,7 @@ function App() {
   const [language, setLanguage] = useState<Language>('ru');
   const t = translations[language];
   
-  const [gameLocations, setGameLocations] = useState(() => 
-    [...locations]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 7)
-  );
+  const [gameLocations, setGameLocations] = useState<typeof locations>([]);
   const [currentLocation, setCurrentLocation] = useState(0);
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
@@ -27,9 +23,22 @@ function App() {
   const [showAnswer, setShowAnswer] = useState(false);
   const [results, setResults] = useState<GuessResult[]>([]);
   const [gameComplete, setGameComplete] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // Initialize game locations only on client side
+  useEffect(() => {
+    setIsClient(true);
+    const shuffledLocations = [...locations]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 7);
+    setGameLocations(shuffledLocations);
+  }, []);
 
   const resetGame = useCallback(() => {
-    setGameLocations([...locations].sort(() => Math.random() - 0.5).slice(0, 7));
+    const newLocations = [...locations]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 7);
+    setGameLocations(newLocations);
     setCurrentLocation(0);
     setHours('');
     setMinutes('');
@@ -102,6 +111,17 @@ function App() {
       </select>
     </div>
   );
+
+  // Show loading state until client-side hydration is complete
+  if (!isClient || gameLocations.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-xl p-8">
+          <Clock className="w-8 h-8 text-blue-500 animate-pulse mx-auto" />
+        </div>
+      </div>
+    );
+  }
 
   if (gameComplete) {
     return (
